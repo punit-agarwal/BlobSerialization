@@ -131,3 +131,67 @@ func isSkipEvm(indicator byte) bool {
 func getDatabyteLength(indicator byte) int {
 	return int(indicator & dataLengthBits)
 }
+
+// SerializedBlob is a helper struct used by Deserialize to determine the total size of the data byte array
+type SerializedBlob struct {
+	numNonTerminalChunks int
+	terminalLength       int
+}
+
+// Deserialize results in the byte array being deserialised and
+// separated into its respective interfaces.
+func Deserialize(data []byte) ([]RawBlob, error) {
+	chunksNumber := len(data) / int(chunkSize)
+	serializedBlobs := []SerializedBlob{}
+	numPartitions := 0
+
+	// first iterate through every chunk and identify blobs and their length
+	for i := 0; i < chunksNumber; i++ {
+		indicatorIndex := i * int(chunkSize)
+		databyteLength := getDatabyteLength(data[indicatorIndex])
+
+		// if indicator is non-terminal, increase partitions counter
+		if databyteLength == 0 {
+			numPartitions += 1
+		} else {
+			// if indicator is terminal, append blob info and reset partitions counter
+			serializedBlob := SerializedBlob{
+				numNonTerminalChunks: numPartitions,
+				terminalLength:       databyteLength,
+			}
+			serializedBlobs = append(serializedBlobs, serializedBlob)
+			numPartitions = 0
+		}
+	}
+
+	// for each block, construct the data byte array
+	deserializedBlob := make([]RawBlob, 0, len(serializedBlobs))
+	currentByte := 0
+	for i := 0; i < len(serializedBlobs); i++ {
+		numNonTerminalChunks := serializedBlobs[i].numNonTerminalChunks
+		terminalLength := serializedBlobs[i].terminalLength
+
+		blob := RawBlob{}
+		blob.data = make([]byte, 0, numNonTerminalChunks*31+terminalLength)
+
+		// append data from non-terminal chunks
+		for chunk := 0; chunk < numNonTerminalChunks; chunk++ {
+			dataBytes := data[currentByte+1 : currentByte+32]
+			blob.data = append(blob.data, dataBytes...)
+			currentByte += 32
+		}
+
+		if isSkipEvm(data[currentByte]) {
+			blob.flags.skipEvmExecution = true
+		}
+
+		// append data from terminal chunk
+		dataBytes := data[currentByte+1 : currentByte+terminalLength+1]
+		blob.data = append(blob.data, dataBytes...)
+		currentByte += 32
+
+		deserializedBlob = append(deserializedBlob, blob)
+	}
+
+	return deserializedBlob, nil
+}
