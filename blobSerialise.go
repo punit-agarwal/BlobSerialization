@@ -26,6 +26,28 @@ type RawBlob struct {
 	data  []byte
 }
 
+// NewRawBlob builds a raw blob from any interface by using
+// RLP encoding.
+func NewRawBlob(i interface{}, skipEvm bool) (*RawBlob, error) {
+	data, err := rlp.EncodeToBytes(i)
+	if err != nil {
+		return nil, fmt.Errorf("RLP encoding was a failure:%v", err)
+	}
+	return &RawBlob{data: data, flags: Flags{skipEvmExecution: skipEvm}}, nil
+}
+
+// ConvertFromRawBlob converts raw blob back from a byte array
+// to its interface.
+func ConvertFromRawBlob(blob *RawBlob, i interface{}) error {
+	data := (*blob).data
+	err := rlp.DecodeBytes(data, i)
+	if err != nil {
+		return fmt.Errorf("RLP decoding was a failure:%v", err)
+	}
+
+	return nil
+}
+
 // getNumChunks calculates the number of chunks that will be produced by a byte array of given length
 func getNumChunks(dataSize int) int {
 	numChunks := math.Ceil(float64(dataSize) / float64(chunkDataSize))
