@@ -64,3 +64,58 @@ func getTerminalLength(dataSize int) int {
 	numChunks := getNumChunks(dataSize)
 	return dataSize - ((numChunks - 1) * int(chunkDataSize))
 }
+
+// Serialize takes a set of blobs and converts them to a single byte array.
+func Serialize(rawBlobs []*RawBlob) ([]byte, error) {
+	// Loop through all blobs and determine the amount of space that needs to be allocated
+	totalDataSize := 0
+	for i := 0; i < len(rawBlobs); i++ {
+		blobDataSize := len(rawBlobs[i].data)
+		totalDataSize += getSerializedDatasize(blobDataSize)
+	}
+
+	returnData := make([]byte, 0, totalDataSize)
+
+	// Loop through every blob and copy one chunk at a time
+	for i := 0; i < len(rawBlobs); i++ {
+		rawBlob := rawBlobs[i]
+		numChunks := getNumChunks(len(rawBlob.data))
+
+		for j := 0; j < numChunks; j++ {
+			var terminalLength int
+
+			// if non-terminal chunk
+			if j != numChunks-1 {
+				terminalLength = int(chunkDataSize)
+
+				// append indicating byte with just the length bits
+				returnData = append(returnData, byte(0))
+			} else {
+				terminalLength = getTerminalLength(len(rawBlob.data))
+
+				indicatorByte := byte(terminalLength)
+				// include skipEvm flag if true
+				if rawBlob.flags.skipEvmExecution {
+					indicatorByte = indicatorByte | skipEvmBits
+				}
+
+				returnData = append(returnData, indicatorByte)
+			}
+
+			// append data bytes
+			chunkStart := j * int(chunkDataSize)
+			chunkEnd := chunkStart + terminalLength
+			blobSlice := rawBlob.data[chunkStart:chunkEnd]
+			returnData = append(returnData, blobSlice...)
+
+			// append filler bytes, if necessary
+			if terminalLength != int(chunkDataSize) {
+				numFillerBytes := numChunks*int(chunkDataSize) - len(rawBlob.data)
+				fillerBytes := make([]byte, numFillerBytes)
+				returnData = append(returnData, fillerBytes...)
+			}
+		}
+	}
+
+	return returnData, nil
+}
