@@ -123,7 +123,7 @@ func Serialize(rawBlobs []*RawBlob) ([]byte, error) {
 
 // isSkipEvm is true if the first bit is 1
 func isSkipEvm(indicator byte) bool {
-	return indicator&skipEvmBits>>7 == 1
+	return indicator&skipEvmBits>>7 == 0
 }
 
 
