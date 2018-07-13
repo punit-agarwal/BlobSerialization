@@ -57,6 +57,6 @@ serialisedblob[index*chunksize] = len(collationbody) - index*chunkdatasize
 } 
 
 ```
-| --- |
+
 
 After this the terminal chunk will add the remaining data bytes and append an indicator byte specifying the size of the data bytes.
