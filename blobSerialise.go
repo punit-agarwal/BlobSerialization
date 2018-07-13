@@ -25,3 +25,20 @@ type RawBlob struct {
 	flags Flags
 	data  []byte
 }
+
+// getNumChunks calculates the number of chunks that will be produced by a byte array of given length
+func getNumChunks(dataSize int) int {
+	numChunks := math.Ceil(float64(dataSize) / float64(chunkDataSize))
+	return int(numChunks)
+}
+
+// getSerializedDatasize determines the number of bytes that will be produced by a byte array of given length
+func getSerializedDatasize(dataSize int) int {
+	return getNumChunks(dataSize) * int(chunkSize)
+}
+
+// getTerminalLength determines the length of the final chunk for a byte array of given length
+func getTerminalLength(dataSize int) int {
+	numChunks := getNumChunks(dataSize)
+	return dataSize - ((numChunks - 1) * int(chunkDataSize))
+}
