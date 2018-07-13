@@ -124,3 +124,10 @@ func Serialize(rawBlobs []*RawBlob) ([]byte, error) {
 func isSkipEvm(indicator byte) bool {
 	return indicator&skipEvmBits>>7 == 1
 }
+
+
+// getDatabyteLength is calculated by looking at the last 5 bits.
+// Therefore, mask the first 3 bits to 0
+func getDatabyteLength(indicator byte) int {
+	return int(indicator & dataLengthBits)
+}
