@@ -6,6 +6,7 @@ package utils
 import (
 	"fmt"
 	"math"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 var (
