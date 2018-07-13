@@ -2,13 +2,12 @@
 
 ---
 
-Blob Serialization
-
 _For reference, look at the following post:_ [_https://ethresear.ch/t/blob-serialisation/1705_](https://ethresear.ch/t/blob-serialisation/1705)
 
 This will deal with the implementation of Blob serialization in XVM. A few conditions that will have to hold to build a blob parser:
 
-```   COLLATION_BODY :=   2 ^20
+``` 
+    COLLATION_BODY :=   2 ^20
     CHUNK_SIZE := 32
     INDICATOR_SIZE := 1
     CHUNK_DATA_SIZE := CHUNK_SIZE - INDICATOR_SIZE
